@@ -25,6 +25,10 @@ class RatpLine(models.Model):
     def __unicode__(self):
         return u'%s - %s' % (self.name, self.direction)
 
+    @property
+    def links_ordered(self):
+        return self.links.order_by('order')
+
 
 class RatpStation(models.Model):
     '''

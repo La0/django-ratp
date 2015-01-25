@@ -1,0 +1,12 @@
+<h1>{{ _('Ratp Lines') }}</h1>
+
+{% for line in lines %}
+<div class="line">
+  <h2>{{ line.name }}</h2>
+  {% for link in line.links_ordered %}
+  <p>
+    #{{ link.order }} {{ link.station.name }}
+  </p>
+  {% endfor %}
+</div>
+{% endfor %}
