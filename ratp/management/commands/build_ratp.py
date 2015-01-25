@@ -8,6 +8,7 @@ import re
 import csv
 
 class Command(BaseCommand):
+    networks = ['bus', 'metro', 'rer'] # Do all the networks
     option_list = BaseCommand.option_list + (
         make_option('--stations',
             action='store',
@@ -22,6 +23,24 @@ class Command(BaseCommand):
             type='string',
             default=None,
             help='CSV file listing all RATP links between lines & stations.'
+        ),
+        make_option('--no-bus',
+            action='store_true',
+            dest='no-bus',
+            default=False,
+            help='Don\'t import any bus stations or links.'
+        ),
+        make_option('--no-metro',
+            action='store_true',
+            dest='no-metro',
+            default=False,
+            help='Don\'t import any metro stations or links.'
+        ),
+        make_option('--no-rer',
+            action='store_true',
+            dest='no-rer',
+            default=False,
+            help='Don\'t import any RER stations or links.'
         )
     )
 
@@ -32,12 +51,16 @@ class Command(BaseCommand):
         if not links or not os.path.exists(links):
             raise CommandError('Invalid links file.')
 
+        # Limit networks to import
+        for k,v in kwargs.items():
+            if k.startswith('no-') and v:
+                self.networks.remove(k[3:])
+
         # Load stations
-        if False:
-          with open(stations, 'rb') as csvfile:
-              reader = csv.reader(csvfile, delimiter='#')
-              for line in reader:
-                  self.build_station(*line)
+        with open(stations, 'rb') as csvfile:
+            reader = csv.reader(csvfile, delimiter='#')
+            for line in reader:
+                self.build_station(*line)
 
         # Load links
         with open(links, 'rb') as csvfile:
@@ -52,6 +75,9 @@ class Command(BaseCommand):
         '''
         Build RATP Station from official CSV file input
         '''
+        if network not in self.networks:
+            return None
+
         defaults = {
             'name' : name,
             'city' : city,
@@ -67,6 +93,9 @@ class Command(BaseCommand):
       Build an RATP link between a station and a line
       Will create lines when needed
       '''
+      if network not in self.networks:
+          return None
+
       # Extract line & directions
       regex = r'(\w+) \((.+)\)'
       res = re.match(regex, line_direction)
