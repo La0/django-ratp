@@ -13,21 +13,31 @@ RATP_NETWORKS = (
 class RatpLine(models.Model):
     '''
     Represents a transport line, full of stations
-    Unique name & direction
+    Unique name & network
     '''
     name = models.CharField(max_length=50)
-    direction = models.CharField(max_length=255)
     network = models.CharField(max_length=10, choices=RATP_NETWORKS)
+    color = models.CharField(max_length=6, default="ffffff") # Html colour code
 
     class Meta:
-        unique_together = (('name', 'direction'), )
+        unique_together = (('name', 'network'), )
 
     def __unicode__(self):
-        return u'%s - %s' % (self.name, self.direction)
+        return u'%s %s' % (self.network, self.name)
 
     @property
     def links_ordered(self):
         return self.links.order_by('order')
+
+    def add_station(self, station, order=None):
+        '''
+        Add a station to this line
+        Append when no order given
+        '''
+        if order is None:
+            agg = self.links.aggregate(max_order=models.Max('order'))
+            order = agg['max_order'] is not None and agg['max_order'] + 1 or 0
+        return RatpLink.objects.create(line=self, station=station, order=order)
 
 
 class RatpStation(models.Model):
@@ -37,12 +47,13 @@ class RatpStation(models.Model):
      * rer (suburb train)
      * bus
     '''
-    ratp_id = models.IntegerField(unique=True)
+    osm_id = models.BigIntegerField(unique=True)
+    ratp_id = models.IntegerField(null=True, blank=True)
     network = models.CharField(max_length=10, choices=RATP_NETWORKS)
     name = models.CharField(max_length=255)
-    city = models.CharField(max_length=255)
+    zone = models.IntegerField(default=1)
     lines = models.ManyToManyField(RatpLine, through='ratp.RatpLink', related_name='stations')
-    position = models.PointField()
+    position = models.PointField() # GPS position
 
     def __unicode__(self):
         return u'%s: %s' % (self.network, self.name)
@@ -56,6 +67,9 @@ class RatpLink(models.Model):
     line = models.ForeignKey(RatpLine, related_name='links')
     station = models.ForeignKey(RatpStation, related_name='links')
     order = models.IntegerField(default=0)
+
+    # Reachable neighbors
+    neighbors = models.ManyToManyField(RatpStation)
 
     class Meta:
       ordering = ('order', )

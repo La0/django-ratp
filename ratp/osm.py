@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import requests
 from django.contrib.gis.geos import Point
+from ratp.models import RatpStation, RatpLine, RatpLink
 
 # OSM config
 XAPI_URL = 'http://open.mapquestapi.com/xapi/api/0.6/*[type:RATP=%s]'
@@ -66,7 +67,34 @@ class OsmNode(OsmBase):
 
     @property
     def point(self):
-        return Point()
+        return Point(float(self.xml.attrib['lon']), float(self.xml.attrib['lat']))
+
+    def get_ratp_station(self, network):
+        # Try to cast ratp id
+        try:
+          ratp_id = int(self.tags.get('ref:FR:RATP'))
+        except:
+          ratp_id = None
+
+        if 'name' not in self.tags:
+            raise Exception('No name found.')
+
+        # Build or fetch RatpStation instance
+        defaults = {
+            'network' : network,
+            'name' : self.tags.get('name'),
+            'ratp_id' : ratp_id,
+            'zone' : self.tags.get('STIF:zone', 1),
+            'position' : self.point,
+        }
+        station, _ = RatpStation.objects.get_or_create(osm_id=self.osm_id, defaults=defaults)
+
+        return station
+
+    def is_subway(self):
+        # Helper to match only subway stops
+        return self.tags.get('station') == 'subway' \
+            or self.tags.get('subway') == 'yes'
 
 class OsmRelation(OsmBase):
     '''
@@ -87,3 +115,13 @@ class OsmRelation(OsmBase):
     def list_nodes(self):
         # List the nodes needed
         return [int(node.attrib['ref']) for node in self.xml.findall('member[@type="node"]')]
+
+    def get_ratp_line(self, network):
+        # Build or fetch RatpLine instance
+        defaults = {
+            'color' : self.tags.get('colour', '#FFFFFF')[1:], # strip '#'
+        }
+        name = self.tags.get('ref', self.tags.get('name')[0:10])
+        line, _ = RatpLine.objects.get_or_create(name=name, network=network, defaults=defaults)
+
+        return line
