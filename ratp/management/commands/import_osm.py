@@ -10,6 +10,9 @@ class Command(BaseCommand):
     # All imported stations
     stations = {}
 
+    # All lines
+    lines = []
+
     def handle(self, stations=None, links=None, *args, **kwargs):
 
         # Load nodes
@@ -38,7 +41,9 @@ class Command(BaseCommand):
         logger.info('Line: %s' % line)
 
         # Delete all links between stations & line
-        line.links.all().delete()
+        if line not in self.lines:
+            line.links.all().delete()
+            self.lines.append(line)
 
         nodes = relation.list_nodes()
         for i, osm_id in enumerate(nodes):

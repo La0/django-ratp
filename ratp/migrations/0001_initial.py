@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('osm_id', models.BigIntegerField(unique=True)),
-                ('ratp_id', models.IntegerField(null=True, blank=True)),
+                ('ratp_id', models.IntegerField(unique=True, null=True, blank=True)),
                 ('network', models.CharField(max_length=10, choices=[(b'metro', 'Metro'), (b'rer', 'RER'), (b'bus', 'Bus')])),
                 ('name', models.CharField(max_length=255)),
                 ('zone', models.IntegerField(default=1)),

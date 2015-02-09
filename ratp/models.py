@@ -48,7 +48,7 @@ class RatpStation(models.Model):
      * bus
     '''
     osm_id = models.BigIntegerField(unique=True)
-    ratp_id = models.IntegerField(null=True, blank=True)
+    ratp_id = models.IntegerField(unique=True, null=True, blank=True)
     network = models.CharField(max_length=10, choices=RATP_NETWORKS)
     name = models.CharField(max_length=255)
     zone = models.IntegerField(default=1)

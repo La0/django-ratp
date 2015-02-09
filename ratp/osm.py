@@ -70,11 +70,13 @@ class OsmNode(OsmBase):
         return Point(float(self.xml.attrib['lon']), float(self.xml.attrib['lat']))
 
     def get_ratp_station(self, network):
-        # Try to cast ratp id
+        ratp_id = None
         try:
+          # Fetch an existing station with this ratp id
           ratp_id = int(self.tags.get('ref:FR:RATP'))
+          return RatpStation.objects.get(ratp_id=ratp_id)
         except:
-          ratp_id = None
+          pass
 
         if 'name' not in self.tags:
             raise Exception('No name found.')
